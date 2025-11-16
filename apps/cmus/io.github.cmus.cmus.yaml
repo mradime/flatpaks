@@ -1,0 +1,89 @@
+app-id: io.github.cmus.cmus
+runtime: org.freedesktop.Platform
+runtime-version: 25.08
+sdk: org.freedesktop.Sdk
+command: cmus
+
+finish-args:
+  - --socket=pulseaudio
+  - --unshare=network
+  - --filesystem=xdg-music:ro
+  - --own-name=org.mpris.MediaPlayer2.cmus
+
+modules:
+  - name: libmad
+    buildsystem: cmake-ninja
+    config-opts:
+      - LIBMAD_STATIC=OFF
+      - LIBMAD_SHARED=ON
+      - FPM_DEFAULT=ON
+      - FPM_64BIT=OFF
+      - FPM_INTEL=ON
+      - FPM_ARM=OFF
+      - ASO_ZEROCHECK=OFF
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+      - /share/man
+      - /lib/*.a
+      - /lib/*.la
+    sources:
+      - type: git
+        url: https://codeberg.org/tenacityteam/libmad.git
+        tag: 0.16.4
+        commit: ee7c3cdd4361b7f7c7da52fa3ba9f76cc35230a9
+        x-checker-data:
+          type: git
+          tag-pattern: ^v?(\d+\.\d+\.\d+)$
+      # FIX: Update the minimum required CMake version to a modern one.
+      - type: shell
+        commands:
+          - sed -i 's/^cmake_minimum_required.*/cmake_minimum_required(VERSION 3.5)/'
+            CMakeLists.txt
+
+  - name: cmus
+    buildsystem: autotools
+    config-opts:
+      - CONFIG_MPRIS=n
+      - CONFIG_CYGWIN=n
+      - CONFIG_CDIO=n
+      - CONFIG_FLAC=y
+      - CONFIG_MAD=y
+      - CONFIG_VORBIS=y
+      - CONFIG_OPUS=y
+      - CONFIG_WAV=y
+      - CONFIG_FFMPEG=y
+      - CONFIG_CUE=y
+      - CONFIG_AAC=n
+      - CONFIG_MP4=n
+      - CONFIG_MIKMOD=n
+      - CONFIG_MODPLUG=n
+      - CONFIG_BASS=n
+      - CONFIG_MPC=n
+      - CONFIG_WAVPACK=n
+      - CONFIG_VTX=n
+      - CONFIG_PULSE=y
+      - CONFIG_ALSA=y
+      - CONFIG_JACK=n
+      - CONFIG_ARTS=n
+      - CONFIG_OSS=n
+      - CONFIG_SNDIO=n
+      - CONFIG_SUN=n
+      - CONFIG_COREAUDIO=n
+      - CONFIG_AO=n
+      - CONFIG_WAVEOUT=n
+      - CONFIG_ROAR=n
+      - CONFIG_AAUDIO=n
+    cleanup:
+      - /bin/cmus-remote
+      - /share/man
+      - /share/doc
+    sources:
+      - type: git
+        url: https://github.com/cmus/cmus.git
+        tag: v2.11.0
+        commit: 5f4e941ba59cb90363194ba024e5fb49c97e461d
+        x-checker-data:
+          type: git
+          tag-pattern: ^v?(\d+\.\d+\.\d+)$
+          is-main-source: true
