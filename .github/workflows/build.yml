@@ -50,7 +50,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
-            ref: ${{ github.event.inputs.ref }}
+            ref: ${{ inputs.ref }}
             path: source
         
       - name: Check flatpak branch
@@ -111,13 +111,13 @@ jobs:
 
       - name: Get manifest file
         id: manifest
-        working-directory: source/apps/${{ github.event.inputs.app }}
+        working-directory: source/apps/${{ inputs.app }}
         run: |
-          echo "Checking ${{ github.event.inputs.app }} manifest..."
+          echo "Checking ${{ inputs.app }} manifest..."
           # Find manifest file (could be .yml, .yaml, or .json)
           MANIFEST=$(find . -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" -o -name "*.json" \) | head -n1)
           if [ -z "$MANIFEST" ]; then
-            echo "No manifest found in apps/${{ github.event.inputs.app }}"
+            echo "No manifest found in apps/${{ inputs.app }}"
             exit 1
           fi
           echo "Found manifest: $MANIFEST"
@@ -127,10 +127,10 @@ jobs:
         env:
           GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
         run: |
-          APP="${{ github.event.inputs.app }}"
-          MANIFEST="source/apps/${{ github.event.inputs.app }}/${{ steps.manifest.outputs.file }}"
+          APP="${{ inputs.app }}"
+          MANIFEST="source/apps/${{ inputs.app }}/${{ steps.manifest.outputs.file }}"
           REPO_DIR="${{ steps.flatpak.outputs.repo_dir }}"
-          DEPLOY_TAG="${{ github.event.inputs.deploy_tag }}"
+          DEPLOY_TAG="${{ inputs.deploy_tag }}"
           # Build the flatpak into the single repository
           flatpak-builder \
             --repo="$REPO_DIR" \
@@ -188,7 +188,7 @@ jobs:
       - name: Publish flatpak repository
         working-directory: flatpak
         run: |
-          DEPLOY_TAG="${{ github.event.inputs.deploy_tag }}"
+          DEPLOY_TAG="${{ inputs.deploy_tag }}"
           git add .
           git commit -m "Deploy $DEPLOY_TAG"
           git push origin flatpak
