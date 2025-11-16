@@ -66,9 +66,6 @@ jobs:
             
     needs: get-apps
     if: needs.get-apps.outputs.apps != ''
-
-    outputs:
-      builds: ${{ steps.build.outputs.build }}
     
     steps:
       - name: Checkout repository
@@ -159,46 +156,64 @@ jobs:
           fi
       
       - name: Stringify build object
-        id: build
         if: steps.check-updates.outputs.has_updates == 'true' || steps.check-deploy.outputs.needs_build == 'true'
         run: |
           APP="${{ matrix.app }}"
-          REF="${{ steps.get-version.outputs.tag }}}"
+          REF="${{ steps.get-version.outputs.tag }}"
           DEPLOY_TAG="${{ steps.get-version.outputs.deploy_tag }}"
           BUILD=$(jq -c -n --arg app "$APP" --arg ref "$REF" --arg deploy_tag "$DEPLOY_TAG" \
             '{app: $app, ref: $ref, deploy_tag: $deploy_tag}')
           echo "Build object: $BUILD"
-          echo "build=$BUILD" >> $GITHUB_OUTPUT
+          # Save to file for artifact
+          echo "$BUILD" > build-info.json
+
+      - name: Upload build info
+        if: steps.check-updates.outputs.has_updates == 'true' || steps.check-deploy.outputs.needs_build == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.app }}
+          path: build-info.json
 
   apps-to-build:
     runs-on: ubuntu-latest
     needs: check-updates
-    if: needs.check-updates.outputs.builds != '{}'
 
     outputs:
       builds_str: steps.summarize.outputs.str
 
     steps:
-      - name: Extract values from build JSON object
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: builds
+          pattern: build-*
+          merge-multiple: false
+        continue-on-error: true
+      
+      - name: Summarize all builds
         id: summarize
-        env:
-          RAW: ${{toJson(needs.check-updates.outputs.builds) }}
         run: |
-          echo "The raw 'needs' output is an object of strings:"
-          echo "$RAW"
-          echo "Creating the final array of objects..."
-          # 1. 'values' - Gets just the values from the object (an array of strings)
-          # 2. 'map(fromjson)' - Iterates over the array and parses each string
-          ARRAY=$(echo "$RAW" | jq 'values | map(fromjson)')
+          echo "Collecting all build info files..."
+          # Check if builds directory exists and has content
+          if [ ! -d "builds" ] || [ -z "$(ls -A builds 2>/dev/null)" ]; then
+            echo "No builds found"
+            echo "str=[]" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          # Combine all JSON files into array
+          ARRAY=$(find builds -name "build-info.json" -exec cat {} \; | jq -s -c .)
+          echo "Combined builds array:"
           echo "$ARRAY"
-          echo "Stringifying the final array..."
-          STR=$(echo $ARRAY | jq -R . | jq -s . | tr -d '\n')
-          echo "$STR"
-          echo "str=$STR" >> $GITHUB_OUTPUT
+          # Check if array is empty
+          if [ "$ARRAY" = "[]" ]; then
+            echo "str=[]" >> $GITHUB_OUTPUT
+          else
+            echo "str=$ARRAY" >> $GITHUB_OUTPUT
+          fi
 
   dispatch-builds:
     needs: apps-to-build
-    if: needs.apps-to-build.outputs.builds_str != '[]'
+    if: needs.apps-to-build.outputs.builds_str != '[]' && needs.apps-to-build.outputs.builds_str != ''
 
     permissions:
       contents: write
