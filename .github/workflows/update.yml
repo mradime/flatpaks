@@ -68,7 +68,7 @@ jobs:
     if: needs.get-apps.outputs.apps != ''
 
     outputs:
-      builds: steps.json.outputs.obj
+      builds: ${{ steps.builds.outputs.obj }}
     
     steps:
       - name: Checkout repository
@@ -155,6 +155,7 @@ jobs:
           fi
       
       - name: Stringify build object
+        id: builds
         if: steps.check-updates.outputs.has_updates == 'true' || steps.check-deploy.outputs.needs_build == 'true'
         run: |
           APP="${{ matrix.app }}"
