@@ -159,7 +159,7 @@ jobs:
             --prune \
             --prune-depth=5 \
             --generate-static-deltas \
-            repo
+            flatpak
           echo "✅ Repository summary updated and signed"
 
       - name: Setup pages
