@@ -157,7 +157,7 @@ jobs:
         with:
           script: |
             const app = '${{ matrix.app }}';
-            const ref = '${{ steps.get-version.outputs.tag }}'
+            const ref = '${{ steps.get-version.outputs.tag }}';
             const deployTag = '${{ steps.get-version.outputs.deploy_tag }}';
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
@@ -167,7 +167,7 @@ jobs:
               inputs: {
                 app: app,
                 ref: ref,
-                deploy_tag: deploy_tag
+                deploy_tag: deployTag
               }
             });
             console.log(`Dispatched build workflow for ${app} version ${version}`);
