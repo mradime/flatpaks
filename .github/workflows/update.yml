@@ -17,6 +17,32 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  get-apps:
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.get-apps.outputs.apps }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      
+      - name: Get application directories
+        id: get-apps
+        run: |
+          if [ -n "${{ github.event.inputs.app_filter }}" ]; then
+            # Filter to specific app if provided
+            apps='["${{ github.event.inputs.app_filter }}"]'
+          else
+            # Get all directories in /apps
+            apps=$(ls -d apps/*/ 2>/dev/null | xargs -n1 basename | jq -R . | jq -s . | jq -c .)
+            # If no apps directories exist, create empty array
+            if [ -z "$apps" ] || [ "$apps" = "null" ]; then
+              apps='[]'
+            fi
+          fi
+          echo "Found apps: $apps"
+          echo "apps=\"$apps\"" >> $GITHUB_OUTPUT
+
   check-updates:
     runs-on: ubuntu-latest
 
@@ -135,25 +161,3 @@ jobs:
               }
             });
             console.log(`Dispatched build workflow for ${app} version ${version}`);
-
-  get-apps:
-    runs-on: ubuntu-latest
-    outputs:
-      apps: ${{ steps.get-apps.outputs.apps }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      
-      - name: Get application directories
-        id: get-apps
-        run: |
-          if [ -n "${{ github.event.inputs.app_filter }}" ]; then
-            # Filter to specific app if provided
-            apps='["${{ github.event.inputs.app_filter }}"]'
-          else
-            # Get all directories in /apps
-            apps=$(ls -d apps/*/ | xargs -n1 basename | jq -R . | jq -s .)
-          fi
-          echo "Found apps: $apps"
-          echo "apps=$apps" >> $GITHUB_OUTPUT
