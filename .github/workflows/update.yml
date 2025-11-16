@@ -30,18 +30,25 @@ jobs:
         id: get-apps
         run: |
           if [ -n "${{ github.event.inputs.app_filter }}" ]; then
-            # Filter to specific app if provided
+            # Single app specified
             apps='["${{ github.event.inputs.app_filter }}"]'
           else
-            # Get all directories in /apps
+            # Get all app directories and create JSON array
+            if [ -d "apps" ] && [ "$(ls -A apps/)" ]; then
+              # Create JSON array on single line without newlines
               apps=$(find apps -maxdepth 1 -mindepth 1 -type d -exec basename {} \; | \
-                     jq -R . | jq -s . | jq -c tostring)
-            # If no apps directories exist, create empty array
-            if [ -z "$apps" ] || [ "$apps" = "null" ]; then
+                     jq -R . | jq -s . | tr -d '\n')
+            else
               apps='[]'
+            fi
+            # Handle empty array - GitHub Actions can't use empty arrays in matrix
+            if [ "$apps" = "[]" ] || [ -z "$apps" ]; then
+              echo "No apps found, exiting"
+              exit 0
             fi
           fi
           echo "Found apps: $apps"
+          # Output on single line without quotes
           echo "apps=$apps" >> $GITHUB_OUTPUT
 
   check-updates:
@@ -58,6 +65,7 @@ jobs:
       fail-fast: false
             
     needs: get-apps
+    if: needs.get-apps.outputs.apps != ''
     
     steps:
       - name: Checkout repository
