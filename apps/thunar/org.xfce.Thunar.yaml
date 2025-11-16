@@ -1,0 +1,214 @@
+app-id: org.xfce.Thunar
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+command: thunar
+
+finish-args:
+  - --socket=wayland
+  - --device=dri
+  - --filesystem=home
+  # Thunar uses DConf to store its settings, such as window size, sidebar preferences, and view modes.
+  - --filesystem=xdg-run/dconf
+  # Thunar needs this to apply the desktop theme, icons, and fonts, ensuring a visually consistent experience.
+  - --filesystem=xdg-config/gtk-3.0
+  # This is required for the "Move to Trash" functionality to work correctly.
+  # - --filesystem=xdg-data/Trash
+  # Allows Thunar to access the path where removable media.
+  - --talk-name=org.freedesktop.UDisks2
+  # Allows communication with the generic desktop portal, like opening a file with its default host application.
+  - --talk-name=org.freedesktop.portal.Desktop
+  # This allows Thunar to request access to files located outside of its sandbox via a native file-chooser dialog.
+  - --talk-name=org.freedesktop.portal.Documents
+  # Allows the application to use the dedicated portal for trashing files.
+  - --talk-name=org.freedesktop.portal.Trash
+
+modules:
+  - name: xfce4-dev-tools
+    buildsystem: simple
+    build-tools: true
+    build-commands:
+      - touch docs/xdt-csource.1
+      - ./autogen.sh --prefix=/app --disable-maintainer-mode --disable-static
+      - make
+      - make install
+    config-opts:
+      # CRITICAL: Installs all files into the /app directory inside the sandbox.
+      - --prefix=/app
+      - --disable-maintainer-mode
+      - --disable-static
+    cleanup:
+      - /bin/xdt-autogen
+      - /bin/xdt-csource
+      - /bin/xfce-do-release
+      - /share/xfce4-dev-tools
+      - /share/doc
+      - /share/man
+    sources:
+      - type: git
+        url: https://gitlab.xfce.org/xfce/xfce4-dev-tools.git
+        tag: xfce4-dev-tools-4.21.0
+        commit: 4b803224c4acc6daf3ddcc00fa940086651fdd5e
+        x-checker-data:
+          type: git
+          tag-pattern: ^xfce4-dev-tools-v?(\d+\.\d+\.\d+)$
+
+  - name: libxfce4util
+    buildsystem: meson
+    config-opts:
+      - -Dgtk-doc=false
+      - -Dintrospection=false
+      - -Dvala=disabled
+      - -Dvisibility=true
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+      - /bin/xfce4-kiosk-query
+      - /share/man
+      - '*.a'
+      - '*.la'
+    sources:
+      - type: git
+        url: https://gitlab.xfce.org/xfce/libxfce4util.git
+        tag: libxfce4util-4.20.1
+        commit: fe1b3c88e4e0cb45eb490d11dbc7f9cdd83664d9
+        x-checker-data:
+          type: git
+          tag-pattern: ^libxfce4util-v?(\d+\.\d+\.\d+)$
+
+  - name: xfconf
+    buildsystem: meson
+    config-opts:
+      - -Dgtk-doc=false
+      - -Dintrospection=false
+      - -Dvala=disabled
+      - -Dvisibility=true
+      # Disables the GSettings compatibility backend, which is not needed for a pure XFCE app like Thunar.
+      - -Dgsettings-backend=false
+      # Disables extra debugging checks. Not suitable for a production build.
+      - -Druntime-checks=false
+      # Disables gprof profiling support, which is a development feature.
+      - -Dprofiling=false
+      # Disables building the test suite, which is not needed in the final package.
+      - -Dtests=false
+    cleanup:
+      - /bin/xfconf-query
+      - /include
+      - /lib/pkgconfig
+      - /lib/gio/modules/libgiomodule-xfconf.so
+      - /share/bash-completion
+      - /share/doc
+      - /share/gtk-doc
+      - /share/man
+      - '*.a'
+      - '*.la'
+    sources:
+      - type: git
+        url: https://gitlab.xfce.org/xfce/xfconf.git
+        tag: xfconf-4.21.0
+        commit: aa1a5b5f327c616eb8d5abe4d458d971461f0576
+        x-checker-data:
+          type: git
+          tag-pattern: ^xfconf-v?(\d+\.\d+\.\d+)$
+
+  - name: libxfce4ui
+    buildsystem: meson
+    config-opts:
+      - -Dgtk-doc=false
+      - -Dintrospection=false
+      - -Dvala=disabled
+      - -Dvisibility=true
+      - -Dwayland=enabled
+      # Must be enabled. Thunar requires libxfce4kbd-private, which is built under this option.
+      - -Dkeyboard-library=true
+      - -Dx11=disabled
+      # Disables X11-specific session management.
+      - -Dsession-management=disabled
+      # Disables X11-specific startup notifications.
+      - -Dstartup-notification=disabled
+      # Disables OpenGL support which depends on the disabled libgtop option.
+      - -Depoxy=disabled
+      # Disables libudev integration which depends on the disabled libgtop option.
+      - -Dgudev=disabled
+      # Disables the generation of files for Glade UI designer integration, which are not needed at runtime.
+      - -Dglade=disabled
+    cleanup:
+      - /bin/xfce4-about
+      - /bin/xfce-desktop-item-edit
+      - /bin/xfce-open
+      - /include
+      - /lib/pkgconfig
+      - /share/glade
+      - /share/doc
+      - /share/gtk-doc
+      - /share/man
+      - '*.a'
+      - '*.la'
+    sources:
+      - type: git
+        url: https://gitlab.xfce.org/xfce/libxfce4ui.git
+        tag: libxfce4ui-4.21.2
+        commit: 069d076da47216a732f564ae17e07dec7811ad58
+        x-checker-data:
+          type: git
+          tag-pattern: ^libxfce4ui-v?(\d+\.\d+\.\d+)$
+
+  - name: thunar
+    buildsystem: meson
+    config-opts:
+      - -Dgtk-doc=false
+      # Disables GObject introspection. Not needed for runtime, reduces attack surface.
+      - -Dintrospection=false
+      # Enables GNU symbol visibility, a security hardening feature.
+      - -Dvisibility=true
+      # Disables X11 support. A zero-trust build should be Wayland-only, removing the X11 attack surface.
+      - -Dx11=disabled
+      # Disables X11-specific session management.
+      - -Dsession-management=disabled
+      - -Dgio-unix=enabled
+      # Disables gudev support. Hardware access should be handled by portals, not direct library access.
+      - -Dgudev=disabled
+      - -Dlibnotify=enabled
+      # Critical: Disables Polkit. A sandboxed application must not have privilege escalation.
+      - -Dpolkit=disabled
+      # Advanced Properties Plugin
+      - -Dthunar-apr=enabled
+      # Simple Bulk Rename
+      - -Dthunar-sbr=enabled
+      - -Dgexiv2=disabled
+      - -Dpcre2=disabled
+      # Disables the "Trash Panel Applet" plugin.
+      - -Dthunar-tpa=disabled
+      # Critical: Disables "User Custom Actions." This feature allows running arbitrary commands.
+      - -Dthunar-uca=disabled
+      # Wallpaper context-menu plugin
+      - -Dthunar-wallpaper=enabled
+      # Disables environment variable override for plugin paths, ensuring a consistent environment.
+      - -Dthunarx-dirs-envvar=false
+      # Disables the VTE-based integrated terminal, a complex widget and potential security vector.
+      - -Dterminal=disabled
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+      - /lib/thunarx-3/thunar-sendto-email.so
+      # - /share/applications/thunar-bulk-rename.desktop
+      - /bin/tex-open-terminal
+      - /share/doc
+      - /share/gtk-doc
+      - /share/man
+      - "*.a"
+      - "*.la"
+      - /share/dbus-1/services/org.xfce.Thunar.FileManager1.service
+      - '*.a'
+      - '*.la'
+    sources:
+      - type: git
+        url: https://gitlab.xfce.org/xfce/thunar.git
+        tag: thunar-4.21.0
+        commit: eec4d04e10c66f0a537961f63b435755ef357bf2
+        x-checker-data:
+          type: git
+          tag-pattern: ^thunar-v?(\d+\.\d+\.\d+)$
+          is-main-source: true
+      - type: patch
+        path: fix-have-vte-terminal-props.patch

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>org.xfce.Thunar</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0-or-later</project_license>
+  <name>Thunar</name>
+  <summary>Modern, fast and easy-to-use file manager for Xfce</summary>
+  <description>
+    <p>
+      Thunar is a file browser specifically designed for the Xfce Desktop, but also can
+      serve as an alternate file browser for other Desktop environments. It has been
+      designed from the ground up to be fast and easy-to-use.
+    </p>
+    <p>
+      Its user interface is clean and intuitive, and does not include any confusing or
+      useless options by default.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">org.xfce.thunar.desktop</launchable>
+  
+  <url type="homepage">https://docs.xfce.org/xfce/thunar/start</url>
+  <url type="bugtracker">https://gitlab.xfce.org/xfce/thunar/-/issues</url>
+  <url type="help">https://docs.xfce.org/xfce/thunar/start</url>
+  <url type="donation">https://opencollective.com/xfce</url>
+  
+  <screenshots>
+    <screenshot type="default">
+      <image width="759" height="424">https://docs.xfce.org/_media/xfce/thunar/file-manager-window.png</image>
+      <caption>Thunar File Manager User Interface</caption>
+    </screenshot>
+  </screenshots>
+
+  <releases>
+    <release version="4.21.0" date="2025-3-23">
+        <description></description>
+    </release>
+  </releases>
+
+  <provides>
+    <binary>thunar</binary>
+  </provides>
+
+  <categories>
+    <category>System</category>
+    <category>Utility</category>
+    <category>Core</category>
+    <category>GTK</category>
+  </categories>
+
+  <project_group>Xfce</project_group>
+  <update_contact>xfce4-dev_AT_xfce.org</update_contact>
+  <translation type="gettext">thunar</translation>
+  <content_rating type="oars-1.1"/>
+</component>
