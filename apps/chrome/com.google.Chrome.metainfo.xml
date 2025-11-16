@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2017 the Chromium authors, with modifications -->
+<component type="desktop">
+  <id>com.google.Chrome</id>
+  <launchable type="desktop-id">com.google.Chrome.desktop</launchable>
+  <name>Google Chrome</name>
+  <developer id="com.google">
+    <name>Google</name>
+  </developer>
+  <summary>The browser built to be yours</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+  <url type="homepage">https://chrome.google.com/</url>
+  <content_rating type="oars-1.1"/>
+  <update_contact>mohamedradimee_at_gmail.com</update_contact>
+  <description>
+    <p>Google Chrome is a browser that combines a minimal design with sophisticated technology to make the web faster, safer, and easier.</p>
+    <p>NOTE: This wrapper is not verified by, affiliated with, or supported by Google.</p>
+  </description>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://www.google.com/chrome/static/images/dev-components/chrome-gallery-1.webp</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.google.com/chrome/static/images/dev-components/chrome-gallery-3.webp</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.google.com/chrome/static/images/dev-components/chrome-gallery-5.webp</image>
+    </screenshot>
+  </screenshots>
+  <releases>
+    <release version="142.0.7444.134-1" date="2025-11-05">
+      <description></description>
+    </release>
+  </releases>
+</component>

@@ -1,0 +1,218 @@
+# Flatpak Manifest for Google Chrome (Stable)
+#
+# Author: Mohamed Radi
+# Architecture: x86_64
+# Packaged Version: $VERSION
+# TEMPLATE_VERSION: 1.0
+#
+# The template version is very important as its change trigger a new build
+#
+# Description:
+# This manifest packages a specific, stable version of Google Chrome.
+# To update, you must change the version number in the source URL and
+# provide the new corresponding SHA256 checksum.
+#
+
+app-id: com.google.Chrome
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+tags:
+  - proprietary
+separate-locales: false
+build-options:
+  no-debuginfo: true
+command: chrome
+
+#
+# Sandboxing & Permissions
+#
+finish-args:
+  # --- Base Access ---
+  # Isolate IPC namespace for Chrome's own processes
+  - --unshare=ipc
+  - --share=network
+
+  # --- Windowing System & Graphics ---
+  - --socket=wayland
+  # Direct Rendering Infrastructure for hardware acceleration
+  - --device=dri
+
+  # --- Audio & Media ---
+  # Access to the PipeWire socket for modern audio, video, and screen sharing
+  - --filesystem=xdg-run/pipewire-0
+  # Access to the CUPS socket for printing
+  - --socket=cups
+  # Access to the PC/SC smart card socket, used for FIDO2/U2F hardware security keys
+  # - --socket=pcsc
+
+  # --- D-Bus Access for Desktop Integration (Inter-App Communication) ---
+  # Talk to the power management service to get information like battery status
+  - --system-talk-name=org.freedesktop.UPower
+  # Allows Chrome to inhibit the screensaver (e.g., when watching a video)
+  - --talk-name=org.freedesktop.ScreenSaver
+  # Allows Chrome to display desktop notifications
+  - --talk-name=org.freedesktop.Notifications
+  # Access to the Secret Service API, which integrates with password managers like GNOME Keyring and KWallet
+  - --talk-name=org.freedesktop.secrets
+  # Communicate with the Avahi service for mDNS/DNS-SD network service discovery, used for features like finding Chromecast devices
+  # - --system-talk-name=org.freedesktop.Avahi
+  # Communicate with the system's Bluetooth service
+  # - --system-talk-name=org.bluez
+  # Allows the "Show in folder" option for downloads to work
+  # - --talk-name=org.freedesktop.FileManager1
+  # Allows Chrome to expose media controls (play/pause/next for a YouTube video) to the desktop's media applet
+  - --own-name=org.mpris.MediaPlayer2.chromium.*
+  # For session management and integrating with the system tray
+  - --talk-name=org.gnome.SessionManager # Gnome-based environments
+  - --talk-name=org.kde.StatusNotifierWatcher # KDE-based environments
+
+  # --- Filesystem Access ---
+  # Access to the standard XDG user download directory
+  # Currently disabled to depend in the FileChooser portal dialog
+  # - --filesystem=xdg-download
+  # Access to a socket for Kerberos authentication, used in enterprise environments
+  # - --filesystem=/run/.heim_org.h5l.kcm-socket
+  # Persist user profile and configuration
+  - --persist=.config/google-chrome
+  # Persist public key infrastructure (certificates)
+  - --persist=.pki
+
+  # --- Granular Host Configuration Access ---
+  # For DNS resolution
+  # - --filesystem=/etc/resolv.conf:ro
+  # - --filesystem=/etc/hosts:ro
+  # For hostname identification
+  # - --filesystem=/etc/hostname:ro
+  # For the system's trusted SSL/TLS certificate authorities
+  # - --filesystem=/etc/ssl/certs:ro
+  # - --filesystem=/etc/pki/tls/certs:ro # Fallback for Fedora/RHEL based systems
+
+  # For GNOME proxy resolution
+  - --filesystem=xdg-run/dconf
+  - --filesystem=~/.config/dconf:ro
+  - --filesystem=xdg-config/gtk-3.0:ro # Read-only access for GTK theming
+  - --talk-name=ca.desrt.dconf
+  - --env=GTK_PATH=/app/lib/gtkmodules
+  - --env=DCONF_USER_CONFIG_DIR=.config/dconf
+  - --env=GIO_EXTRA_MODULES=/app/lib/gio/modules
+  - --env=GSETTINGS_BACKEND=dconf
+
+  # For KDE proxy resolution (KDE5 only)
+  - --filesystem=~/.config/kioslaverc
+
+modules:
+  - name: libsecret
+    buildsystem: meson
+    config-opts:
+      - --libdir=lib
+      - -Dmanpage=false
+      - -Dcrypto=disabled
+      - -Dvapi=false
+      - -Dgtk_doc=false
+      - -Dintrospection=false
+      - -Dbash_completion=disabled
+    cleanup:
+      - /bin
+      - /include
+      - /lib/pkgconfig
+      - /share/man
+    sources:
+      - type: archive
+        url: https://download.gnome.org/sources/libsecret/0.21/libsecret-0.21.7.tar.xz
+        sha256: 6b452e4750590a2b5617adc40026f28d2f4903de15f1250e1d1c40bfd68ed55e
+        x-checker-data:
+          type: gnome
+          name: libsecret
+          stable-only: true
+
+  - name: dconf
+    buildsystem: meson
+    config-opts:
+      - --libdir=lib
+      - -Dvapi=false
+      - -Dbash_completion=false
+      - -Dman=false
+    cleanup:
+      - /etc
+      - /include
+      - ca.desrt.dconf.service
+      - dconf.service
+      - dconf-service
+      - '*.pc'
+    sources:
+      - type: archive
+        url: https://download.gnome.org/sources/dconf/0.49/dconf-0.49.0.tar.xz
+        sha256: 16a47e49a58156dbb96578e1708325299e4c19eea9be128d5bd12fd0963d6c36
+        x-checker-data:
+          type: gnome
+          name: dconf
+          stable-only: true
+
+  - name: cobalt
+    buildsystem: meson
+    sources:
+      - type: git
+        url: https://github.com/refi64/cobalt
+        tag: v2024.10
+        commit: b56afa0d44121975d69b8aa1b366e381be6839a0
+        x-checker-data:
+          type: git
+          tag-pattern: ^v([\d.]+)$
+
+  - name: zypak
+    sources:
+      - type: git
+        url: https://github.com/refi64/zypak
+        tag: v2025.09
+        commit: 693a71c5ffa80ec9c9ce2ae03b1ccc493c698e53
+        x-checker-data:
+          type: git
+          tag-pattern: ^v([\d.]+)$
+
+  - name: chrome
+    buildsystem: simple
+    build-commands:
+      - ar x chrome.deb
+      - |
+        if [ -f data.tar.zst ]; then
+          tar -xf data.tar.zst
+        elif [ -f data.tar.xz ]; then
+          tar -xf data.tar.xz
+        else
+          echo "Error: data.tar archive not found or has unknown compression."
+          exit 1
+        fi
+      - rm -rf opt/google/chrome/nacl*
+      - cp -a opt/google/chrome /app/
+      - install -Dm 755 chrome.sh /app/bin/chrome
+      - install -Dm 755 stub_sandbox.sh /app/chrome/chrome-sandbox
+      - install -Dm 644 -t /app/etc cobalt.ini
+      - install -Dm 644 -t /app/share/applications com.google.Chrome.desktop
+      - install -Dm 644 -t /app/share/icons/hicolor/scalable/apps com.google.Chrome.svg
+      - install -Dm 644 -t /app/share/metainfo com.google.Chrome.metainfo.xml
+    sources:
+      - type: file
+        url: https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_142.0.7444.134-1_amd64.deb
+        sha256: 7b14e3bafc2ffd6da77a6bc11f29620fbe00b7b8ba65c2b2a53f716953f37001
+        dest-filename: chrome.deb
+        only-arches: [x86_64]
+        x-checker-data:
+          type: debian-repo
+          root: https://dl.google.com/linux/chrome/deb
+          dist: stable
+          component: main
+          package-name: google-chrome-stable
+          is-main-source: true
+      - type: file
+        path: chrome.sh
+      - type: file
+        path: stub_sandbox.sh
+      - type: file
+        path: cobalt.ini
+      - type: file
+        path: com.google.Chrome.desktop
+      - type: file
+        path: com.google.Chrome.svg
+      - type: file
+        path: com.google.Chrome.metainfo.xml
