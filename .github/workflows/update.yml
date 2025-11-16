@@ -68,7 +68,7 @@ jobs:
     if: needs.get-apps.outputs.apps != ''
 
     outputs:
-      builds: ${{ steps.builds.outputs.obj }}
+      builds: ${{ steps.build.outputs.build }}
     
     steps:
       - name: Checkout repository
@@ -155,16 +155,16 @@ jobs:
           fi
       
       - name: Stringify build object
-        id: builds
+        id: build
         if: steps.check-updates.outputs.has_updates == 'true' || steps.check-deploy.outputs.needs_build == 'true'
         run: |
           APP="${{ matrix.app }}"
           REF="${{ steps.get-version.outputs.tag }}}"
           DEPLOY_TAG="${{ steps.get-version.outputs.deploy_tag }}"
-          OBJ=$(jq -c -n --arg app "$APP" --arg ref "$REF" --arg deploy_tag "$DEPLOY_TAG" \
-            '{app: $app, ref: $ref, deploy_tag: $deploy_tag}' | jq -R . | tr -d '\n')
-          echo "Stringified build object: $OBJ"
-          echo "obj=$OBJ" >> $GITHUB_OUTPUT
+          BUILD=$(jq -c -n --arg app "$APP" --arg ref "$REF" --arg deploy_tag "$DEPLOY_TAG" \
+            '{app: $app, ref: $ref, deploy_tag: $deploy_tag}')
+          echo "Build object: $BUILD"
+          echo "build=$BUILD" >> $GITHUB_OUTPUT
 
   apps-to-build:
     runs-on: ubuntu-latest
@@ -172,21 +172,29 @@ jobs:
     if: needs.check-updates.outputs.builds != '{}'
 
     outputs:
-      builds: steps.parse.outputs.arr
+      builds_str: steps.summarize.outputs.str
 
     steps:
       - name: Extract values from build JSON object
-        id: parse
+        id: summarize
+        env:
+          RAW: ${{toJson(needs.check-updates.outputs.builds) }}
         run: |
-          OBJ="${{ toJson(needs.check-updates.outputs.builds) }}"
-          echo "Builds JSON object: $OBJ"
-          ARR=$(echo $OBJ | jq 'values' | jq 'map(select(. != "" and . != null))' | jq -R . | tr -d '\n')
-          echo "Extracted build values: $ARR"
-          echo "arr=$ARR" >> $GITHUB_OUTPUT
+          echo "The raw 'needs' output is an object of strings:"
+          echo "$RAW"
+          echo "Creating the final array of objects..."
+          # 1. 'values' - Gets just the values from the object (an array of strings)
+          # 2. 'map(fromjson)' - Iterates over the array and parses each string
+          ARRAY=$(echo "$RAW" | jq 'values | map(fromjson)')
+          echo "$ARRAY"
+          echo "Stringifying the final array..."
+          STR=$(echo $ARRAY | jq -R . | jq -s . | tr -d '\n')
+          echo "$STR"
+          echo "str=$STR" >> $GITHUB_OUTPUT
 
   dispatch-builds:
     needs: apps-to-build
-    if: needs.apps-to-build.outputs.builds != '[]'
+    if: needs.apps-to-build.outputs.builds_str != '[]'
 
     permissions:
       contents: write
@@ -195,7 +203,7 @@ jobs:
   
     strategy:
       matrix:
-        build: ${{ fromJson(needs.apps-to-build.outputs.builds) }}
+        build: ${{ fromJson(needs.apps-to-build.outputs.builds_str) }}
       max-parallel: 1
       fail-fast: false
 
