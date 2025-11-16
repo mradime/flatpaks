@@ -59,7 +59,7 @@ jobs:
         if: steps.flatpak.outputs.exists == 'false'
         uses: actions/checkout@v5
         with:
-          path: flatpak-new
+          path: flatpak
 
       - name: Configure Git
         run: |
@@ -68,7 +68,7 @@ jobs:
 
       - name: Initialize flatpak repository (new)
         if: steps.flatpak.outputs.exists == 'false'
-        working-directory: flatpak-new
+        working-directory: flatpak
         run: |
           git switch --orphan flatpak
           # Clean up all files from main branch
