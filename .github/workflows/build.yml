@@ -56,13 +56,13 @@ jobs:
           fi
 
       - name: Create Flatpak repository (new)
-        if: steps.flatpak.outputs.exists == false
+        if: steps.flatpak.outputs.exists == 'false'
         uses: actions/checkout@v5
         with:
           path: flatpak-new
 
       - name: Initialize flatpak repository (new)
-        if: steps.flatpak.outputs.exists == false
+        if: steps.flatpak.outputs.exists == 'false'
         working-directory: flatpak-new
         run: |
           git switch --orphan flatpak
@@ -78,7 +78,7 @@ jobs:
           git commit -m "Initialize flatpak branch with LFS"
 
       - name: Checkout flatpak repository (existing)
-        if: steps.flatpak.outputs.exists == true
+        if: steps.flatpak.outputs.exists == 'true'
         uses: actions/checkout@v5
         with:
           ref: flatpak
@@ -126,7 +126,7 @@ jobs:
           echo "✅ Built $APP ($DEPLOY_TAG) into repository"
 
       - name: Merge flatpak-new into flatpak (new)
-        if: steps.flatpak.outputs.exists == false
+        if: steps.flatpak.outputs.exists == 'false'
         run: cp -a flatpak-new/. flatpak
 
       - name: Create or update hardened.flatpakrepo

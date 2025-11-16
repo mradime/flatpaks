@@ -92,14 +92,14 @@ jobs:
           echo "has_manifest=true" >> $GITHUB_OUTPUT
 
       - name: "Update manifest if there are any updates"
-        if: steps.manifest.outputs.has_manifest == true
+        if: steps.manifest.outputs.has_manifest == 'true'
         uses: docker://ghcr.io/flathub/flatpak-external-data-checker:latest
         with:
             args: --edit-only ${{ steps.manifest.outputs.manifest }}
 
       - name: Get app version from manifest
         id: get-version
-        if: steps.manifest.outputs.has_manifest == true
+        if: steps.manifest.outputs.has_manifest == 'true'
         working-directory: apps/${{ matrix.app }}
         run: |
           MANIFEST="${{ steps.manifest.outputs.manifest }}"
@@ -111,7 +111,7 @@ jobs:
 
       - name: Check for version update
         id: check-updates
-        if: steps.manifest.outputs.has_manifest == true
+        if: steps.manifest.outputs.has_manifest == 'true'
         run: |
           TAG="${{ steps.get-version.outputs.tag }}"
           if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
@@ -123,7 +123,7 @@ jobs:
           fi
 
       - name: Commit manifest updates
-        if: steps.check-updates.outputs.has_updates == true
+        if: steps.check-updates.outputs.has_updates == 'true'
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
@@ -137,7 +137,7 @@ jobs:
       
       - name: Check for deployment tag
         id: check-deploy
-        if: steps.check-updates.outputs.has_updates == false
+        if: steps.check-updates.outputs.has_updates == 'false'
         run: |
           VERSION="${{ steps.get-version.outputs.version }}"
           DEPLOY_TAG="deploy-${{ matrix.app }}-${VERSION}"
@@ -151,7 +151,7 @@ jobs:
           fi
       
       - name: Dispatch build workflow
-        if: steps.check-updates.outputs.has_updates == true || steps.check-deploy.outputs.needs_build == true
+        if: steps.check-updates.outputs.has_updates == 'true' || steps.check-deploy.outputs.needs_build == 'true'
         uses: actions/github-script@v7
         with:
           script: |
