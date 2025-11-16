@@ -201,7 +201,7 @@ jobs:
             exit 0
           fi
           # Combine all JSON files into array
-          ARRAY=$(find builds -name "build-info.json" -exec cat {} \; | jq -s -c .)
+          ARRAY=$(find builds -name "build-info.json" -exec cat {} \; | jq -R . | jq -s . | tr -d '\n')
           echo "Combined builds array:"
           echo "$ARRAY"
           # Check if array is empty
