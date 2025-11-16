@@ -57,6 +57,7 @@ jobs:
           echo "has_manifest=true" >> $GITHUB_OUTPUT
 
       - name: "Update manifest if there are any updates"
+        if: steps.manifest.outputs.has_manifest == true
         uses: docker://ghcr.io/flathub/flatpak-external-data-checker:latest
         with:
             args: --edit-only ${{ steps.manifest.outputs.manifest }}
@@ -73,7 +74,7 @@ jobs:
           TAG="${{ matrix.app }}-$VERSION"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-      - name: Check for any manifest updates
+      - name: Check for version update
         id: check-updates
         if: steps.manifest.outputs.has_manifest == true
         run: |
