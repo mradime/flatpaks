@@ -183,6 +183,11 @@ jobs:
 
   dispatch-builds:
     needs: apps-to-build
+
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
   
     strategy:
       matrix:
