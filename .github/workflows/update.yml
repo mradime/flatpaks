@@ -157,6 +157,7 @@ jobs:
         with:
           script: |
             const app = '${{ matrix.app }}';
+            const version = '${{ steps.get-version.outputs.version }}';
             const ref = '${{ steps.get-version.outputs.tag }}';
             const deployTag = '${{ steps.get-version.outputs.deploy_tag }}';
             await github.rest.actions.createWorkflowDispatch({
