@@ -156,7 +156,7 @@ jobs:
             echo "Title=Hardened Flatpaks";
             echo "Url=${REPO_URL}";
             echo "GPGKey=$(gpg --export $GPG_KEY_ID | base64 | tr -d '\n')";
-          } > "hardened.flatpakrepo"
+          } > "flatpak/hardened.flatpakrepo"
 
       - name: Ensure ostree refs/remotes directory exists
         run: mkdir -p flatpak/refs/remotes
