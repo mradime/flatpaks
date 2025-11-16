@@ -147,8 +147,8 @@ modules:
     sources:
       - type: git
         url: https://gitlab.xfce.org/xfce/libxfce4ui.git
-        tag: libxfce4ui-4.21.2
-        commit: 069d076da47216a732f564ae17e07dec7811ad58
+        tag: libxfce4ui-4.21.3
+        commit: 8bdbccf333fd35cccbd196eaf93c30fc811635a3
         x-checker-data:
           type: git
           tag-pattern: ^libxfce4ui-v?(\d+\.\d+\.\d+)$
@@ -196,16 +196,16 @@ modules:
       - /share/doc
       - /share/gtk-doc
       - /share/man
-      - "*.a"
-      - "*.la"
+      - '*.a'
+      - '*.la'
       - /share/dbus-1/services/org.xfce.Thunar.FileManager1.service
       - '*.a'
       - '*.la'
     sources:
       - type: git
         url: https://gitlab.xfce.org/xfce/thunar.git
-        tag: thunar-4.21.0
-        commit: eec4d04e10c66f0a537961f63b435755ef357bf2
+        tag: thunar-4.21.3
+        commit: bfbf215c7c03cef433d19e9f43d9a922538adecc
         x-checker-data:
           type: git
           tag-pattern: ^thunar-v?(\d+\.\d+\.\d+)$
