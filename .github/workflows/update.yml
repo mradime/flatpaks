@@ -107,7 +107,9 @@ jobs:
           VERSION=$(echo "$SOURCE_VERSION" | grep -oP 'v?([0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?(?:[-+][0-9A-Za-z.]+)?)(?=\/|[-_.]|\.(?:tar|zip|gz|xz|bz2|deb)|$)' | head -n1)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           TAG="${{ matrix.app }}-$VERSION"
+          DEPLOY_TAG="deploy-${{ matrix.app }}-${VERSION}"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "deploy_tag=$DEPLOY_TAG" >> $GITHUB_OUTPUT
 
       - name: Check for version update
         id: check-updates
@@ -116,10 +118,10 @@ jobs:
           TAG="${{ steps.get-version.outputs.tag }}"
           if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
             echo "Version tag $TAG already exists"
-            echo "has_updates=true" >> $GITHUB_OUTPUT
+            echo "has_updates=false" >> $GITHUB_OUTPUT
           else
             echo "Version tag $TAG not found"
-            echo "has_updates=false" >> $GITHUB_OUTPUT
+            echo "has_updates=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Commit manifest updates
@@ -140,14 +142,13 @@ jobs:
         if: steps.check-updates.outputs.has_updates == 'false'
         run: |
           VERSION="${{ steps.get-version.outputs.version }}"
-          DEPLOY_TAG="deploy-${{ matrix.app }}-${VERSION}"
+          DEPLOY_TAG="${{ steps.get-version.outputs.deploy_tag }}"
           if git rev-parse "refs/tags/$DEPLOY_TAG" >/dev/null 2>&1; then
             echo "Deployment tag $DEPLOY_TAG already exists"
             echo "needs_build=false" >> $GITHUB_OUTPUT
           else
             echo "Deployment tag $DEPLOY_TAG not found"
             echo "needs_build=true" >> $GITHUB_OUTPUT
-            echo "deploy_tag=$DEPLOY_TAG" >> $GITHUB_OUTPUT
           fi
       
       - name: Dispatch build workflow
@@ -157,7 +158,7 @@ jobs:
           script: |
             const app = '${{ matrix.app }}';
             const ref = '${{ steps.get-version.outputs.tag }}'
-            const deployTag = '${{ steps.check-deploy.outputs.deploy_tag }}';
+            const deployTag = '${{ steps.get-version.outputs.deploy_tag }}';
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
