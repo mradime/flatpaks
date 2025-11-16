@@ -95,7 +95,7 @@ jobs:
         if: steps.manifest.outputs.has_manifest == 'true'
         uses: docker://ghcr.io/flathub/flatpak-external-data-checker:latest
         with:
-            args: --edit-only "${{ matrix.app }}/${{ steps.manifest.outputs.manifest_file }}"
+            args: --edit-only "apps/${{ matrix.app }}/${{ steps.manifest.outputs.manifest_file }}"
 
       - name: Get app version from manifest
         id: get-version
