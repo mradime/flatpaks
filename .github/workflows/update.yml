@@ -161,8 +161,8 @@ jobs:
           APP="${{ matrix.app }}"
           REF="${{ steps.get-version.outputs.tag }}}"
           DEPLOY_TAG="${{ steps.get-version.outputs.deploy_tag }}"
-          OBJ=$(jq -c -n --arg app "$APP" --arg ref "$REF" --arg "$DEPLOY_TAG" \
-            '{app: $app, ref: $ref, deploy_tag: $deploy_tag}' | jq -s . | tr -d '\n')
+          OBJ=$(jq -c -n --arg app "$APP" --arg ref "$REF" --arg deploy_tag "$DEPLOY_TAG" \
+            '{app: $app, ref: $ref, deploy_tag: $deploy_tag}' | jq -R . | tr -d '\n')
           echo "Stringified build object: $OBJ"
           echo "obj=$OBJ" >> $GITHUB_OUTPUT
 
@@ -179,7 +179,7 @@ jobs:
         id: parse
         run: |
           OBJ="${{ toJson(needs.check-updates.outputs.builds) }}"
-          ARR=$(echo $OBJ | jq 'values' | jq 'map(select(. != "" and . != null))' | jq -s . | tr -d '\n')
+          ARR=$(echo $OBJ | jq 'values' | jq 'map(select(. != "" and . != null))' | jq -R . | tr -d '\n')
           echo "Extracted build values: $ARR"
           echo "arr=$ARR" >> $GITHUB_OUTPUT
 
