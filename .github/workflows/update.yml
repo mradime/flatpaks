@@ -163,6 +163,7 @@ jobs:
           DEPLOY_TAG="${{ steps.get-version.outputs.deploy_tag }}"
           OBJ=$(jq -c -n --arg app "$APP" --arg ref "$REF" --arg "$DEPLOY_TAG" \
             '{app: $app, ref: $ref, deploy_tag: $deploy_tag}' | jq -s . | tr -d '\n')
+          echo "Stringified build object: $OBJ"
           echo "obj=$OBJ" >> $GITHUB_OUTPUT
 
   apps-to-build:
