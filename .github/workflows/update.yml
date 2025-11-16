@@ -179,6 +179,7 @@ jobs:
         id: parse
         run: |
           OBJ="${{ toJson(needs.check-updates.outputs.builds) }}"
+          echo "Builds JSON object: $OBJ"
           ARR=$(echo $OBJ | jq 'values' | jq 'map(select(. != "" and . != null))' | jq -R . | tr -d '\n')
           echo "Extracted build values: $ARR"
           echo "arr=$ARR" >> $GITHUB_OUTPUT
