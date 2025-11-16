@@ -1,0 +1,184 @@
+name: Build and Deploy Flatpak
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        type: string
+        required: true
+        description: 'Application name'
+      ref:
+          type: string
+          required: false
+          default: main
+          description: 'Optional: repository checkout reference'
+      deploy_tag:
+        type: string
+        required: true
+        description: 'Deploy tag for this build'
+
+# Ensure only one build runs at a time
+concurrency:
+  group: build-flatpaks
+  cancel-in-progress: false  # Don't cancel, queue instead
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
+
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+            ref: ${{ github.event.inputs.ref }}
+            path: source
+        
+      - name: Check flatpak branch
+        id: flatpak
+        working-directory: source
+        run: |
+          if git ls-remote --exit-code --branches origin flatpak; then
+            echo "Flatpak branch exists"
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "repo_dir=flatpak" >> $GITHUB_OUTPUT
+          else
+            echo "Flatpak branch doesn't exist"
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "repo_dir=flatpak-new" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Flatpak repository (new)
+        if: steps.flatpak.outputs.exists == false
+        uses: actions/checkout@v5
+        with:
+          path: flatpak-new
+
+      - name: Initialize flatpak repository
+        if: steps.flatpak.outputs.exists == false
+        working-directory: flatpak-new
+        run: |
+          git switch --orphan flatpak
+          # Clean up all files from main branch
+          git rm -rf . || true
+          # Setup Git LFS for ostree objects
+          git lfs install
+          git lfs track "**/objects/**"
+          git lfs track "*.flatpak"
+          # Create .gitattributes
+          cp ../source/.gitattributes
+          git add .gitattributes
+          git commit -m "Initialize flatpak branch with LFS"
+
+      - name: Checkout flatpak repository (existing)
+        if: steps.flatpak.outputs.exists == true
+        uses: actions/checkout@v5
+        with:
+          ref: flatpak
+          path: flatpak
+          fetch-depth: 0
+          lfs: true
+
+      - name: Get manifest file
+        id: manifest
+        working-directory: source/apps/${{ github.event.inputs.app }}
+        run: |
+          echo "Checking ${{ github.event.inputs.app }} manifest..."
+          # Find manifest file (could be .yml, .yaml, or .json)
+          MANIFEST=$(find . -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" -o -name "*.json" \) | head -n1)
+          if [ -z "$MANIFEST" ]; then
+            echo "No manifest found in apps/${{ github.event.inputs.app }}"
+            exit 1
+          fi
+          echo "Found manifest: $MANIFEST"
+          echo "file=$MANIFEST" >> $GITHUB_OUTPUT
+
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+          # List the imported key for verification
+          gpg --list-secret-keys
+
+      - name: Build flatpak app
+        env:
+          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+        run: |
+          APP="${{ github.event.inputs.app }}"
+          MANIFEST="source/apps/${{ github.event.inputs.app }}/${{ steps.manifest.outputs.file }}"
+          REPO_DIR="${{ steps.flatpak.outputs.repo_dir }}"
+          DEPLOY_TAG="${{ github.event.inputs.deploy_tag }}"
+          # Build the flatpak into the single repository
+          flatpak-builder \
+            --repo="$REPO_DIR" \
+            --force-clean \
+            --disable-rofiles-fuse \
+            --gpg-sign="$GPG_KEY_ID" \
+            --subject="$DEPLOY_TAG" \
+            build-dir \
+            "$MANIFEST"
+          echo "✅ Built $APP ($DEPLOY_TAG) into repository"
+
+      - name: Merge flatpak-new into flatpak (new)
+        if: steps.flatpak.outputs.exists == false
+        run: cp -a flatpak-new/. flatpak
+
+      - name: Create or update hardened.flatpakrepo
+        env:
+          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+        run: |
+          REPO_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          {
+            echo "[Flatpak Repo]";
+            echo "Title=Hardened Flatpaks";
+            echo "Url=${REPO_URL}";
+            echo "GPGKey=$(gpg --export $GPG_KEY_ID | base64 | tr -d '\n')";
+          } > "hardened.flatpakrepo"
+
+      - name: Ensure ostree refs/remotes directory exists
+        run: mkdir -p flatpak/refs/remotes
+
+      - name: Sign flatpak repository summary
+        env:
+          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+        run: |
+          # Update repository metadata
+          flatpak build-update-repo \
+            --gpg-sign="$GPG_KEY_ID" \
+            --prune \
+            --prune-depth=5 \
+            --generate-static-deltas \
+            repo
+          echo "✅ Repository summary updated and signed"
+
+      - name: Setup pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload repository as artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./flatpak
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Publish flatpak repository
+        working-directory: flatpak
+        run: |
+          DEPLOY_TAG="${{ github.event.inputs.deploy_tag }}"
+          git add .
+          git commit -m "Deploy $DEPLOY_TAG"
+          git push origin flatpak
+          git tag "$DEPLOY_TAG"
+          git push origin "$DEPLOY_TAG"
