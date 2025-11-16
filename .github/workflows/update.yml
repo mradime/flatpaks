@@ -179,7 +179,7 @@ jobs:
     needs: check-updates
 
     outputs:
-      builds_str: steps.summarize.outputs.str
+      builds_str: ${{ steps.summarize.outputs.str }}
 
     steps:
       - name: Download all build artifacts
