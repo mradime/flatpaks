@@ -95,14 +95,14 @@ jobs:
         if: steps.manifest.outputs.has_manifest == 'true'
         uses: docker://ghcr.io/flathub/flatpak-external-data-checker:latest
         with:
-            args: --edit-only ${{ steps.manifest.outputs.manifest }}
+            args: --edit-only ${{ steps.manifest.outputs.manifest_file }}
 
       - name: Get app version from manifest
         id: get-version
         if: steps.manifest.outputs.has_manifest == 'true'
         working-directory: apps/${{ matrix.app }}
         run: |
-          MANIFEST="${{ steps.manifest.outputs.manifest }}"
+          MANIFEST="${{ steps.manifest.outputs.manifest_file }}"
           SOURCE_VERSION=$(yq e '.modules[].sources[] | select(.["x-checker-data"]["is-main-source"] == true) | .tag // .["x-checker-data"].version // .url' "$MANIFEST" 2>/dev/null)
           VERSION=$(echo "$SOURCE_VERSION" | grep -oP 'v?([0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?(?:[-+][0-9A-Za-z.]+)?)(?=\/|[-_.]|\.(?:tar|zip|gz|xz|bz2|deb)|$)' | head -n1)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
