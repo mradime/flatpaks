@@ -73,7 +73,7 @@ jobs:
           git lfs track "**/objects/**"
           git lfs track "*.flatpak"
           # Create .gitattributes
-          cp ../source/.gitattributes
+          cp ../source/.gitattributes ./
           git add .gitattributes
           git commit -m "Initialize flatpak branch with LFS"
 
