@@ -34,7 +34,9 @@ jobs:
             apps='["${{ github.event.inputs.app_filter }}"]'
           else
             # Get all directories in /apps
-            apps=$(ls -d apps/*/ 2>/dev/null | xargs -n1 basename | jq -R . | jq -s . | jq -c .)
+            # Create JSON array and properly escape it for GitHub Actions
+              apps=$(find apps -maxdepth 1 -mindepth 1 -type d -exec basename {} \; | \
+                     jq -R . | jq -s .)
             # If no apps directories exist, create empty array
             if [ -z "$apps" ] || [ "$apps" = "null" ]; then
               apps='[]'
