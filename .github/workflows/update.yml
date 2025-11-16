@@ -132,12 +132,16 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add apps/${{ matrix.app }}
-          git commit -m "Update ${{ matrix.app }} to version ${{ steps.get-version.outputs.version }}"
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "✅ No changes to commit."
+          else
+            git add apps/${{ matrix.app }}
+            git commit -m "Update ${{ matrix.app }} to version ${{ steps.get-version.outputs.version }}"
+            git push origin main
+          fi
           # Create version tag
           TAG="${{ steps.get-version.outputs.tag }}"
           git tag -a "$TAG" -m "Release ${{ matrix.app }} version ${{ steps.get-version.outputs.version }}"
-          git push origin main
           git push origin "$TAG"
       
       - name: Check for deployment tag
