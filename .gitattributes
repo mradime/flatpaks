@@ -1,0 +1,7 @@
+# Git LFS Configuration for Flatpak Repository
+#
+# This tells Git to use the Large File Storage (LFS) extension for all
+# binary objects created by OSTree within the Flatpak repository. This is
+# essential to avoid GitHub's 100MB file size limit.
+#
+**/objects/** filter=lfs diff=lfs merge=lfs -text
