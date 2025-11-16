@@ -56,7 +56,6 @@ jobs:
 
     permissions:
       contents: write
-      actions: write
       
     strategy:
       matrix:
@@ -153,22 +152,9 @@ jobs:
       
       - name: Dispatch build workflow
         if: steps.check-updates.outputs.has_updates == 'true' || steps.check-deploy.outputs.needs_build == 'true'
-        uses: actions/github-script@v7
+        continue-on-error: true
+        uses: ./.github/workflows/build.yml
         with:
-          script: |
-            const app = '${{ matrix.app }}';
-            const version = '${{ steps.get-version.outputs.version }}';
-            const ref = '${{ steps.get-version.outputs.tag }}';
-            const deployTag = '${{ steps.get-version.outputs.deploy_tag }}';
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'build.yml',
-              ref: 'main',
-              inputs: {
-                app: app,
-                ref: ref,
-                deploy_tag: deployTag
-              }
-            });
-            console.log(`Dispatched build workflow for ${app} version ${version}`);
+          app: ${{ matrix.app }}
+          ref: ${{ steps.get-version.outputs.tag }}
+          deploy_tag: ${{ steps.get-version.outputs.deploy_tag }}

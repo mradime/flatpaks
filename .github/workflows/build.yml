@@ -16,6 +16,17 @@ on:
         type: string
         required: true
         description: 'Deploy tag for this build'
+  workflow_call:
+    inputs:
+        app:
+            type: string
+            required: true
+        ref:
+            type: string
+            required: true
+        deploy_tag:
+            type: string
+            required: true
 
 # Ensure only one build runs at a time
 concurrency:
