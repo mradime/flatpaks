@@ -61,6 +61,11 @@ jobs:
         with:
           path: flatpak-new
 
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Initialize flatpak repository (new)
         if: steps.flatpak.outputs.exists == 'false'
         working-directory: flatpak-new
@@ -167,11 +172,6 @@ jobs:
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
-
-      - name: Configure Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Publish flatpak repository
         working-directory: flatpak
