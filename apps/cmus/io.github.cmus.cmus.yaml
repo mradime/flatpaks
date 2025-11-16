@@ -81,8 +81,8 @@ modules:
     sources:
       - type: git
         url: https://github.com/cmus/cmus.git
-        tag: v2.11.0
-        commit: 5f4e941ba59cb90363194ba024e5fb49c97e461d
+        tag: v2.12.0
+        commit: 58d34cf9db5c29e01a985a48a9b6947855cb6cc9
         x-checker-data:
           type: git
           tag-pattern: ^v?(\d+\.\d+\.\d+)$
