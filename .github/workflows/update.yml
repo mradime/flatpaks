@@ -167,7 +167,7 @@ jobs:
   apps-to-build:
     runs-on: ubuntu-latest
     needs: check-updates
-    if: needs.check-updates.outputs.builds != '[]'
+    if: needs.check-updates.outputs.builds != '{}'
 
     outputs:
       builds: steps.parse.outputs.arr
@@ -178,11 +178,12 @@ jobs:
         env:
             OBJ: ${{ toJson(needs.check-updates.outputs.builds) }}
         run: |
-          ARR=$(echo $OBJ | jq 'values' | jq -s . | tr -d '\n')
+          ARR=$(echo $OBJ | jq 'values' | jq 'map(select(. != "" and . != null))' | jq -s . | tr -d '\n')
           echo "arr=$ARR" >> $GITHUB_OUTPUT
 
   dispatch-builds:
     needs: apps-to-build
+    if: needs.apps-to-build.outputs.builds != '[]'
 
     permissions:
       contents: write
