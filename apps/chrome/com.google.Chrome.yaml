@@ -193,8 +193,8 @@ modules:
       - install -Dm 644 -t /app/share/metainfo com.google.Chrome.metainfo.xml
     sources:
       - type: file
-        url: https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_143.0.7499.40-1_amd64.deb
-        sha256: af1e727cdf1f0f86ecd92440489eb96058a37eaf71927503c1989776001a8085
+        url: https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_143.0.7499.109-1_amd64.deb
+        sha256: dfa61e3934e17c5ccc42cfb0c7114bc30526a74b8f05bd3e6fc4c3ecb1b57bed
         dest-filename: chrome.deb
         only-arches: [x86_64]
         x-checker-data:
